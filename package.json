@@ -1,6 +1,7 @@
 {
   "name": "osm-filter-map",
   "version": "0.1.0",
+  "license": "MIT",
   "dependencies": {
     "autoprefixer": "^10.4.13",
     "maplibre-gl": "^4.6.0",
