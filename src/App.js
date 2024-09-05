@@ -1,9 +1,9 @@
-import React, { createRef, useEffect, useLayoutEffect, useState } from 'react';
+import React, { createRef, useLayoutEffect, useState } from 'react';
 import * as pmtiles from 'pmtiles';
 import maplibre from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-let TILES_URL = "https://pmtiles.s3.amazonaws.com/seychelles.pmtiles";
+let TILES_URL = "https://pmtiles.s3.amazonaws.com/kenya.pmtiles";
 let protocol = new pmtiles.Protocol();
 maplibre.addProtocol("pmtiles", protocol.tile);
 
@@ -35,24 +35,23 @@ const getFilterItem = (item) => {
   return ['has', item[0]];
 };
 
-const popupContent = (feature) => {
-  return (
-    const name = e.features[0].properties.name;
-    return `OSM ID ${e.features[0].properties['@id']}${name ? ` (${name})` : ''}`;
-  );
+const getPopupContent = (e) => {
+  const name = e.features[0].properties.name;
+  return (`OSM ID ${e.features[0].properties['@id']}${name ? ` (${name})` : ''}`);
 }
 
 export default function App() {
   const mapRef = createRef();
   const [map, setMap] = useState(null);
+  const [filterMode, setFilterMode] = useState("any");
   const [filter, setFilter] = useState('amenity');
 
   useLayoutEffect(() => {
     const m = new maplibre.Map({
       container: mapRef.current,
       style: xyzStyle,
-      center: [55.4954, -4.7020],
-      zoom: 12,
+      center: [36.81132,-1.28503],
+      zoom: 15,
       attributionControl: false
     })
       .addControl(new maplibre.AttributionControl({ compact: false }))
@@ -107,7 +106,7 @@ export default function App() {
           'type': 'fill',
           'paint': {
             'fill-color': '#007cbf',
-            'fill-opacity': 1
+            'fill-opacity': 0.5
           },
           'filter': ['all', ['==', '$type', 'Polygon'], ['has', 'amenity']],
           'source': 'protomaps',
@@ -116,28 +115,21 @@ export default function App() {
       );
       m.on('click', 'points', function (e) {
         
-
         new maplibre.Popup()
         .setLngLat(e.lngLat)
-        .setHTML(content)
+        .setHTML(getPopupContent(e))
         .addTo(m);
       });
       m.on('click', 'lines', function (e) {
-        const name = e.features[0].properties.name;
-        const content = `OSM ID ${e.features[0].properties['@id']}${name ? ` (${name})` : ''}`;
-
         new maplibre.Popup()
         .setLngLat(e.lngLat)
-        .setHTML(content)
+        .setHTML(getPopupContent(e))
         .addTo(m);
       });
       m.on('click', 'areas', function (e) {
-        const name = e.features[0].properties.name;
-        const content = `OSM ID ${e.features[0].properties['@id']}${name ? ` (${name})` : ''}`;
-
         new maplibre.Popup()
         .setLngLat(e.lngLat)
-        .setHTML(content)
+        .setHTML(getPopupContent(e))
         .addTo(m);
       });
     });
@@ -161,7 +153,7 @@ export default function App() {
       [
         'all',
         ['==', '$type', 'Point'],
-        ['any', ...newFilter.map((i) => getFilterItem(i))]
+        [filterMode, ...newFilter.map((i) => getFilterItem(i))]
       ]
     );
     map.setFilter(
@@ -169,7 +161,7 @@ export default function App() {
       [
         'all',
         ['==', '$type', 'LineString'],
-        ['any', ...newFilter.map((i) => getFilterItem(i))]
+        [filterMode, ...newFilter.map((i) => getFilterItem(i))]
       ]
     );
     map.setFilter(
@@ -177,7 +169,7 @@ export default function App() {
       [
         'all',
         ['==', '$type', 'Polygon'],
-        ['any', ...newFilter.map((i) => getFilterItem(i))]
+        [filterMode, ...newFilter.map((i) => getFilterItem(i))]
       ]
     );
   };
@@ -190,16 +182,26 @@ export default function App() {
   return (
     <>
       <div id="map" className='h-screen w-full' ref={mapRef} />
-      <div className='absolute float-right top-0 left-0 p-2 m-2 rounded bg-gray-300/50'>
+      <div className='absolute float-right w-1/4 top-0 left-0 p-2 m-2 rounded bg-gray-300/50'>
         <h1 className='font-semibold pb-2'>Filter by OSM tags combinations</h1>
-        <form onSubmit={onSubmit}
-        >
-          <input
-            className='p-1 rounded border'
-            type='text'
-            onChange={(e) => setFilter(e.target.value)} value={filter}
-          />
-          <button className='bg-slate-400 font-semibold px-2 py-1 ml-1 rounded' onClick={updateFilters}>
+        <form onSubmit={onSubmit} className='flex flex-row'>
+          <div>
+            <button
+              className={
+                `rounded font-semibold inline-block w-10 py-1 ${filterMode === 'all' ? 'bg-blue-400' : 'bg-blue-300'}`
+              }
+              onClick={() => setFilterMode(filterMode === 'any' ? 'all' : 'any')}
+              title="Switch between ALL / ANY tags filter"
+            >
+              {filterMode.toUpperCase()}
+            </button>
+            <input
+              className='p-1 rounded border min-w-52'
+              type='text'
+              onChange={(e) => setFilter(e.target.value)} value={filter}
+            />
+          </div>
+          <button className='bg-slate-500 text-slate-100 block font-semibold px-2 py-1 ml-1 rounded' onClick={updateFilters}>
             Filter
           </button>
         </form>
